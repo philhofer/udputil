@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"net"
 	"os"
@@ -22,11 +23,13 @@ func main() {
 
 	addr, err := net.ResolveUDPAddr("udp", bindAddr)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Printf("Couldn't resolve bind address: %s\n", err.Error())
+		os.Exit(1)
 	}
 	conn, err := net.ListenUDP("udp", addr)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Printf("Listen error: %s", err.Error())
+		os.Exit(1)
 	}
 	log.Printf("Listening on %s...", conn.LocalAddr().String())
 	buf := [1024]byte{}
@@ -37,6 +40,7 @@ func main() {
 		case <-sigchan:
 			goto exit
 		default:
+			// Timeout forces us to poll on sigchan regularly; otherwise receive blocks
 			conn.SetReadDeadline(time.Now().Add(100 * time.Millisecond))
 			n, addr, err := conn.ReadFromUDP(buf[0:])
 			if err != nil {
@@ -51,6 +55,6 @@ func main() {
 		}
 	}
 exit:
-	log.Println("Exited normally.")
 	conn.Close()
+	log.Println("Exited normally.")
 }

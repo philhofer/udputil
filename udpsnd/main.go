@@ -4,9 +4,9 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"io"
 	"net"
 	"os"
-  "io"
 )
 
 var (
@@ -33,14 +33,14 @@ func main() {
 	}
 	conn.SetWriteBuffer(2048)
 
-	fmt.Printf("Sending from %s, sending to %s\n...", conn.LocalAddr().String(), remote.String())
+	fmt.Printf("Sending from %s, sending to %s...\n", conn.LocalAddr().String(), remote.String())
 	bin := bufio.NewReaderSize(os.Stdin, 1024)
 	for {
 		line, _, err := bin.ReadLine()
 		if err != nil {
-      if err == io.EOF {
-        os.Exit(0)
-      }
+			if err == io.EOF {
+				os.Exit(0)
+			}
 			fmt.Println(err)
 			os.Exit(1)
 		}
