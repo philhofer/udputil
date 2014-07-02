@@ -12,10 +12,14 @@ import (
 
 var (
 	bindAddr string
+	timeout time.Duration
+	sigchan chan os.Signal
+	tchan <-chan time.Time
 )
 
 func init() {
 	flag.StringVar(&bindAddr, "bind", ":65000", "UDP local listen address")
+	flag.DurationVar(&timeout, "t", 0, "Time to run (or forever if <0)")
 }
 
 func main() {
@@ -33,15 +37,24 @@ func main() {
 	}
 	log.Printf("Listening on %s...", conn.LocalAddr().String())
 	buf := [1024]byte{}
-	sigchan := make(chan os.Signal, 1)
+	sigchan = make(chan os.Signal, 1)
+	var readT time.Duration
+	if timeout > 0 {
+		tchan = time.After(timeout)
+		readT = timeout
+	} else {
+		readT = 100 * time.Millisecond
+	}
 	signal.Notify(sigchan, os.Interrupt, os.Kill)
 	for {
 		select {
 		case <-sigchan:
 			goto exit
+		case <-tchan:
+			goto exit
 		default:
 			// Timeout forces us to poll on sigchan regularly; otherwise receive blocks
-			conn.SetReadDeadline(time.Now().Add(100 * time.Millisecond))
+			conn.SetReadDeadline(time.Now().Add(readT))
 			n, addr, err := conn.ReadFromUDP(buf[0:])
 			if err != nil {
 				if neterr, ok := err.(net.Error); ok {
