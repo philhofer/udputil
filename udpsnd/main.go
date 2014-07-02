@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+  "io"
 )
 
 var (
@@ -13,7 +14,7 @@ var (
 )
 
 func init() {
-	flag.StringVar(&saddr, "b", ":65000", "Address to publish to")
+	flag.StringVar(&saddr, "bind", ":65000", "Address to publish to")
 }
 
 func main() {
@@ -37,6 +38,9 @@ func main() {
 	for {
 		line, _, err := bin.ReadLine()
 		if err != nil {
+      if err == io.EOF {
+        os.Exit(0)
+      }
 			fmt.Println(err)
 			os.Exit(1)
 		}
